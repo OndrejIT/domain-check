@@ -19,16 +19,20 @@ pub struct Telegram {
     pub chat_id: String,
 }
 
-static CONFIG: OnceLock<Config> = OnceLock::new();
+static STATIC_CONFIG: OnceLock<Config> = OnceLock::new();
 
 pub fn get_config() -> &'static Config {
-    CONFIG.get().expect("Configuration is not initialized")
+    STATIC_CONFIG
+        .get()
+        .expect("Configuration is not initialized")
 }
 
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     let config_file = fs::read_to_string("./config.toml")?;
     let config: Config = toml::from_str(&config_file)?;
-    let _ = CONFIG.set(config);
+    let _ = STATIC_CONFIG.set(config);
 
     Ok(())
 }
+
+pub use get_config as CONFIG;
