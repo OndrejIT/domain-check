@@ -1,3 +1,4 @@
+use crate::config::get_whois_server;
 use chrono::{DateTime, Utc};
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -39,7 +40,9 @@ impl WhoisResponse {
 }
 
 pub fn query(domain: &str) -> std::io::Result<WhoisResponse> {
-    let mut stream = TcpStream::connect("whois.verisign-grs.com:43")?;
+    let server =
+        get_whois_server(domain).expect(&format!("Failed to get WHOIS server for {}", domain));
+    let mut stream = TcpStream::connect(&format!("{}:{}", server.server, server.port))?;
     stream.write_all(format!("{}\r\n", domain).as_bytes())?;
 
     let mut response = String::new();
