@@ -41,21 +41,22 @@ pub struct Telegram {
     pub chat_id: String,
 }
 
-pub fn get_whois_server(domain: &str) -> Option<Whois> {
+pub fn get_whois_server(domain: &str) -> String {
     let tld = domain.split('.').last().unwrap_or("");
     let config = get_config();
-
-    if config.whois.is_empty() {
-        return default_whois().get(0).cloned();
-    }
 
     let whois = config
         .whois
         .iter()
         .find(|w| w.tld == tld)
-        .cloned()
-        .or_else(|| default_whois().get(0).cloned());
-    whois
+        .cloned();
+
+    if whois.is_none() && tld == "com" {
+        return "whois.verisign-grs.com:43".to_string();
+    }
+
+    let whois = whois.expect(&format!("Failed to get WHOIS server for {}", domain));
+    format!("{}:{}", whois.server, whois.port)
 }
 
 static STATIC_CONFIG: OnceLock<Config> = OnceLock::new();

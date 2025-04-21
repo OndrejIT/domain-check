@@ -40,9 +40,8 @@ impl WhoisResponse {
 }
 
 pub fn query(domain: &str) -> std::io::Result<WhoisResponse> {
-    let server =
-        get_whois_server(domain).expect(&format!("Failed to get WHOIS server for {}", domain));
-    let mut stream = TcpStream::connect(&format!("{}:{}", server.server, server.port))?;
+    let whois = get_whois_server(domain);
+    let mut stream = TcpStream::connect(&whois)?;
     stream.write_all(format!("{}\r\n", domain).as_bytes())?;
 
     let mut response = String::new();
