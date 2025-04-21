@@ -1,6 +1,6 @@
 use crate::config::get_whois_server;
 use chrono::{DateTime, Utc};
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use std::net::TcpStream;
 
 pub struct WhoisResponse {
@@ -39,13 +39,17 @@ impl WhoisResponse {
     }
 }
 
-pub fn query(domain: &str) -> std::io::Result<WhoisResponse> {
-    let whois = get_whois_server(domain);
-    let mut stream = TcpStream::connect(&whois)?;
-    stream.write_all(format!("{}\r\n", domain).as_bytes())?;
+pub fn query(domain: &str) -> io::Result<WhoisResponse> {
+    match get_whois_server(domain) {
+        Ok(whois_addr) => {
+            let mut stream = TcpStream::connect(&whois_addr)?;
+            stream.write_all(format!("{}\r\n", domain).as_bytes())?;
 
-    let mut response = String::new();
-    stream.read_to_string(&mut response)?;
+            let mut response = String::new();
+            stream.read_to_string(&mut response)?;
 
-    Ok(WhoisResponse { data: response })
+            Ok(WhoisResponse { data: response })
+        }
+        Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+    }
 }

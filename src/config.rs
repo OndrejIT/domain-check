@@ -41,22 +41,17 @@ pub struct Telegram {
     pub chat_id: String,
 }
 
-pub fn get_whois_server(domain: &str) -> String {
+pub fn get_whois_server(domain: &str) -> Result<String, Box<dyn std::error::Error>> {
     let tld = domain.split('.').last().unwrap_or("");
     let config = get_config();
 
-    let whois = config
-        .whois
-        .iter()
-        .find(|w| w.tld == tld)
-        .cloned();
+    let whois = config.whois.iter().find(|w| w.tld == tld).cloned();
 
-    if whois.is_none() && tld == "com" {
-        return "whois.verisign-grs.com:43".to_string();
+    match whois {
+        Some(w) => Ok(format!("{}:{}", w.server, w.port)),
+        None if tld == "com" => Ok("whois.verisign-grs.com:43".to_string()),
+        None => Err(format!("No WHOIS server found for domain {}", domain).into()),
     }
-
-    let whois = whois.expect(&format!("Failed to get WHOIS server for {}", domain));
-    format!("{}:{}", whois.server, whois.port)
 }
 
 static STATIC_CONFIG: OnceLock<Config> = OnceLock::new();
