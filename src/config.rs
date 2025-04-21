@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 pub struct Config {
     pub telegram: Telegram,
     pub domain: Vec<Domain>,
+    #[serde(default = "default_whois")]
     pub whois: Vec<Whois>,
 }
 
@@ -26,6 +27,14 @@ fn default_whois_port() -> u16 {
     43
 }
 
+fn default_whois() -> Vec<Whois> {
+    vec![Whois {
+        server: "whois.verisign-grs.com".to_string(),
+        tld: "com".to_string(),
+        port: default_whois_port(),
+    }]
+}
+
 #[derive(Deserialize, Clone)]
 pub struct Telegram {
     pub token: String,
@@ -34,18 +43,19 @@ pub struct Telegram {
 
 pub fn get_whois_server(domain: &str) -> Option<Whois> {
     let tld = domain.split('.').last().unwrap_or("");
-    get_config()
+    let config = get_config();
+
+    if config.whois.is_empty() {
+        return default_whois().get(0).cloned();
+    }
+
+    let whois = config
         .whois
         .iter()
         .find(|w| w.tld == tld)
         .cloned()
-        .or_else(|| {
-            Some(Whois {
-                server: "whois.verisign-grs.com".to_string(),
-                tld: "com".to_string(),
-                port: default_whois_port(),
-            })
-        })
+        .or_else(|| default_whois().get(0).cloned());
+    whois
 }
 
 static STATIC_CONFIG: OnceLock<Config> = OnceLock::new();
